@@ -174,17 +174,18 @@ export const deleteAlbum = async (albumId) => {
     return result !== null && result.affectedRows > 0;
 };
 
-//Get artists and albums
+//Get albums by artist
 
-export const getArtistsAndAlbums = async () => {
+export const getAlbumsByArtist = async (artistId) => {
     const db = getDb();
 
-    const artistsAndAlbums = await new Promise((resolve, reject) => {
+    const albums = await new Promise((resolve, reject) => {
         db.query(
-            'SELECT * FROM artists LEFT JOIN albums ON artists.artist_id = albums.artist_id',
+            'SELECT * FROM albums WHERE artist_id = ?',
+            artistId,
             dbQueryCallback(resolve, reject)
         );
     });
 
-    return artistsAndAlbums;
+    return albums;
 };

@@ -3,6 +3,7 @@ import {
     getArtistById,
     getAlbums,
     getAlbumById,
+    getAlbumsByArtist,
     createArtist,
     createAlbum,
     updateArtist,
