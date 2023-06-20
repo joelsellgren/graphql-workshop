@@ -3,10 +3,8 @@ import {
     getArtistById,
     getAlbums,
     getAlbumById,
-    getArtistsAndAlbums,
     createArtist,
     createAlbum,
-    updateAlbum,
     updateArtist,
     deleteAlbum,
     deleteArtist,
@@ -17,6 +15,7 @@ import {
     GraphQLString,
     GraphQLInt,
     GraphQLList,
+    GraphQLBoolean,
     GraphQLSchema,
 } from 'graphql';
 
@@ -27,13 +26,13 @@ const ArtistType = new GraphQLObjectType({
         artist_name: { type: GraphQLString },
         date_of_birth: { type: GraphQLString },
         // Albums
-        /* albums: {
-            type: new GraphQLList(Album),
+        albums: {
+            type: new GraphQLList(AlbumType),
             resolve(parentValue, args) {
                 const artist_id = parentValue.artist_id;
                 return getAlbumsByArtist(artist_id);
             },
-        }, */
+        },
     }),
 });
 
@@ -43,6 +42,7 @@ const AlbumType = new GraphQLObjectType({
         album_id: { type: GraphQLInt },
         album_name: { type: GraphQLString },
         release_year: { type: GraphQLString },
+        artist_id: { type: GraphQLInt },
         // Artists
         artists: {
             type: new GraphQLList(ArtistType),
@@ -74,8 +74,9 @@ const query = new GraphQLObjectType({
         },
         albums: {
             type: new GraphQLList(AlbumType),
-            resolve(parentValue, args) {
-                return getAlbums();
+            resolve() {
+                const albums = getAlbums();
+                return albums;
             },
         },
         album: {
@@ -107,22 +108,64 @@ const mutation = new GraphQLObjectType({
                 return createArtist(artist);
             },
         },
+        createAlbum: {
+            type: AlbumType,
+            args: {
+                artist_id: { type: GraphQLInt },
+                album_name: { type: GraphQLString },
+                release_year: { type: GraphQLInt },
+            },
+            resolve(parentValue, args) {
+                const { artist_id, album_name, release_year } = args;
+
+                const album = {
+                    album_name,
+                    release_year,
+                };
+                return createAlbum(album, artist_id);
+            },
+        },
         updateArtist: {
             type: ArtistType,
             args: {
                 artist_id: { type: GraphQLInt },
                 artist_name: { type: GraphQLString },
+                date_of_birth: { type: GraphQLString },
             },
             async resolve(parentValue, args) {
-                const { artist_id, artist_name } = args;
-                const artist = await getArtistById(artist_id);
+                const { artist_id, artist_name, date_of_birth } = args;
 
-                if (artist) {
-                    artist.artist_name = artist_name;
+                const updatedArtist = {
+                    artist_name,
+                    date_of_birth,
+                };
 
-                    await updatePurchase(artist);
+                const success = await updateArtist(artist_id, updatedArtist);
+
+                if (success) {
+                    const updatedArtistData = await getArtistById(artist_id);
+                    return updatedArtistData;
                 }
-                return artist;
+            },
+        },
+        deleteArtist: {
+            type: GraphQLBoolean,
+            args: {
+                artist_id: { type: GraphQLInt },
+            },
+            resolve(parentValue, args) {
+                const { artist_id } = args;
+                return deleteArtist(artist_id);
+            },
+        },
+        deleteAlbum: {
+            type: GraphQLBoolean,
+            args: {
+                album_id: { type: GraphQLInt },
+            },
+            resolve(parentValue, args) {
+                const { album_id } = args;
+                return deleteAlbum(album_id);
             },
         },
     }),

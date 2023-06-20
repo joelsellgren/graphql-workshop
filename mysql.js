@@ -18,15 +18,16 @@ const dbQueryCallback =
     (err, result) => {
         if (err) {
             reject(err);
+            return;
         }
 
         if (single && result.length > 0) {
-            result = result[0];
+            resolve(result[0]);
         } else if (single && result.length === 0) {
-            result = null;
+            resolve(null);
+        } else {
+            resolve(result);
         }
-
-        resolve(result);
     };
 
 //Artist CRUD
@@ -57,7 +58,7 @@ export const getArtistById = async (artistId) => {
 export const createArtist = async (artist) => {
     const db = getDb();
 
-    const newArtist = await new Promise((resolve, reject) => {
+    const result = await new Promise((resolve, reject) => {
         db.query('INSERT INTO artists SET ?', artist, (err, result) => {
             if (err) {
                 reject(err);
@@ -67,18 +68,19 @@ export const createArtist = async (artist) => {
         });
     });
 
-    return newArtist;
+    return await getArtistById(result);
 };
 
 export const updateArtist = async (artistId, updatedArtist) => {
     const db = getDb();
 
     const result = await new Promise((resolve, reject) => {
-        db.query(
+        const query = db.query(
             'UPDATE artists SET ? WHERE artist_id = ?',
             [updatedArtist, artistId],
             dbQueryCallback(resolve, reject)
         );
+        console.log(query.sql);
     });
 
     return result.affectedRows > 0;
@@ -95,7 +97,7 @@ export const deleteArtist = async (artistId) => {
         );
     });
 
-    return result.affectedRows > 0;
+    return result !== null && result.affectedRows > 0;
 };
 
 //Album CRUD
@@ -123,20 +125,25 @@ export const getAlbumById = async (albumId) => {
     return album;
 };
 
-export const createAlbum = async (album) => {
+export const createAlbum = async (album, artist_id) => {
     const db = getDb();
 
     const newAlbum = await new Promise((resolve, reject) => {
-        db.query('INSERT INTO albums SET ?', album, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result.insertId);
+        // Add artist_id to the query
+        db.query(
+            'INSERT INTO albums SET artist_id = ?, ?',
+            [artist_id, album],
+            (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result.insertId);
+                }
             }
-        });
+        );
     });
 
-    return newAlbum;
+    return await getAlbumById(newAlbum);
 };
 
 export const updateAlbum = async (albumId, updatedAlbum) => {
@@ -158,13 +165,13 @@ export const deleteAlbum = async (albumId) => {
 
     const result = await new Promise((resolve, reject) => {
         db.query(
-            'DELETE FROM albums WHERE albums_id = ?',
+            'DELETE FROM albums WHERE album_id = ?',
             albumId,
             dbQueryCallback(resolve, reject)
         );
     });
 
-    return result.affectedRows > 0;
+    return result !== null && result.affectedRows > 0;
 };
 
 //Get artists and albums
