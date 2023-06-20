@@ -45,11 +45,11 @@ const AlbumType = new GraphQLObjectType({
         release_year: { type: GraphQLString },
         artist_id: { type: GraphQLInt },
         // Artists
-        artists: {
-            type: new GraphQLList(ArtistType),
+        artist: {
+            type: ArtistType,
             resolve(parentValue, args) {
-                const album_id = parentValue.album_id;
-                return getArtistByAlbum(album_id);
+                const artist_id = parentValue.artist_id;
+                return getArtistById(artist_id);
             },
         },
     }),
